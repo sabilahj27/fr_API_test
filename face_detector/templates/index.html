@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Image Capture</title>
+</head>
+
+<body>
+    <h1>Camera Image Capture</h1>
+    <video id="cameraStream" autoplay playsinline></video>
+    <img id="capturedImage" style="display: none;">
+    <canvas id="imageCanvas" style="display: none;"></canvas>
+
+    <div id="result">
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Access the user's camera
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    var video = document.getElementById('cameraStream');
+                    video.srcObject = stream;
+
+                    // Play the video and capture image immediately
+                    video.onloadedmetadata = function () {
+                        video.play();
+
+                        // Capture image when user clicks the form button
+                        $('#imageForm').submit(function (event) {
+                            event.preventDefault();
+
+                            var canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            var context = canvas.getContext('2d');
+
+                            // Draw the video frame onto the canvas
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                            // Convert canvas content to base64 data URL
+                            var dataURL = canvas.toDataURL('image/png');
+                            // Remove the data URL prefix to get the image data
+                            var imageData = dataURL.replace(/^data:image\/(png|jpg);base64,/, '');
+
+                            // Create a new FormData and append the image data
+                            var formData = new FormData();
+                            formData.append('image', imageData);
+
+                            // Display the captured image
+                            var capturedImage = document.getElementById('capturedImage');
+                            capturedImage.src = dataURL;
+                            capturedImage.style.display = 'block';
+
+                            // Convert canvas content to a Blob (image file)
+                            canvas.toBlob(function (blob) {
+                                var formData = new FormData();
+                                formData.append('image', blob, 'captured_image.png');
+
+                                // Send the captured image to Django
+                                $.ajax({
+                                    url: '/face_detector/', // Replace with the URL of your Django view
+                                    type: 'POST',
+                                    data: formData,
+                                    processData: false,
+                                    contentType: false,
+                                    success: function (data) {
+                                        // Handle the response data here
+                                        $('#result').empty(); // Clear previous results
+
+                                        // Assuming data.faces is an array of face objects
+                                        for (var i = 0; i < data.faces.length; i++) {
+                                            var face = data.faces[i];
+                                            var faceInfo = "Location: " + face.location + "<br>" +
+                                                "Emotion: " + face.emotion + "<br>" +
+                                                "Age: " + face.age + "<br>" +
+                                                "Gender: " + face.gender + "<br>" +
+                                                "Name: " + face.name + "<br><br>";
+                                            $('#result').append(faceInfo); // Display each face's info
+                                        }
+                                    },
+                                    error: function (xhr, textStatus, errorThrown) {
+                                        console.log('Error:', errorThrown);
+                                    }
+                                });
+                            }, 'image/png');
+                        });
+                    };
+                })
+                .catch(function (error) {
+                    console.error('Camera access error:', error);
+                });
+        });
+
+    </script>
+</body>
+
+</html>
