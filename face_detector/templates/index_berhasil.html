@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection</title>
+</head>
+<body>
+    <h1>Face Detection</h1>
+    <form action="/face_detection/detect/" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="image" accept="image/*">
+        <button type="submit">Detect</button>
+    </form>
+    
+    <h2>Detected Faces:</h2>
+    <ul>
+        {% for face in faces %}
+            <li>
+                <strong>Name:</strong> {{ face.name }}<br>
+                <strong>Age:</strong> {{ face.age }}<br>
+                <strong>Gender:</strong> {{ face.gender }}<br>
+                <strong>Emotion:</strong> {{ face.emotion }}<br>
+                <strong>Location:</strong> {{ face.location }}<br>
+                <!-- <img src="{{ face.location }}"> -->
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
